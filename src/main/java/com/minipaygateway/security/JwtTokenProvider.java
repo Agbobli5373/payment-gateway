@@ -41,16 +41,18 @@ public class JwtTokenProvider {
 		return Keys.hmacShaKeyFor(material);
 	}
 
-	public String createToken(String subject, List<String> roles) {
+	public String createToken(String subject, List<String> roles, String ownerRef) {
 		var now = new Date();
 		var exp = new Date(now.getTime() + expirySeconds * 1000);
-		return Jwts.builder()
+		var builder = Jwts.builder()
 				.subject(subject)
 				.claim("roles", roles)
 				.issuedAt(now)
-				.expiration(exp)
-				.signWith(key)
-				.compact();
+				.expiration(exp);
+		if (ownerRef != null && !ownerRef.isBlank()) {
+			builder.claim("ownerRef", ownerRef);
+		}
+		return builder.signWith(key).compact();
 	}
 
 	public Claims parseClaims(String token) {

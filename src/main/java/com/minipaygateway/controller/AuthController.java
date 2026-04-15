@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.minipaygateway.config.SecurityUsersProperties;
 import com.minipaygateway.dto.request.TokenRequest;
 import com.minipaygateway.dto.response.TokenResponse;
 import com.minipaygateway.security.JwtTokenProvider;
@@ -23,12 +24,15 @@ public class AuthController {
 
 	private final AuthenticationManager authenticationManager;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final SecurityUsersProperties securityUsersProperties;
 	private final long expirySeconds;
 
 	public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
+			SecurityUsersProperties securityUsersProperties,
 			@Value("${app.jwt.expiry-seconds}") long expirySeconds) {
 		this.authenticationManager = authenticationManager;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.securityUsersProperties = securityUsersProperties;
 		this.expirySeconds = expirySeconds;
 	}
 
@@ -41,7 +45,12 @@ public class AuthController {
 		var roles = user.getAuthorities().stream()
 				.map(a -> a.getAuthority().replace("ROLE_", ""))
 				.toList();
-		String jwt = jwtTokenProvider.createToken(user.getUsername(), roles);
+		String ownerRef = securityUsersProperties.getUsers().stream()
+				.filter(u -> u.username().equals(user.getUsername()))
+				.findFirst()
+				.map(SecurityUsersProperties.UserEntry::ownerRef)
+				.orElse(null);
+		String jwt = jwtTokenProvider.createToken(user.getUsername(), roles, ownerRef);
 		return ResponseEntity.ok(new TokenResponse(jwt, expirySeconds, roles));
 	}
 }

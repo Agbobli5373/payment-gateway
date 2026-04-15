@@ -1,5 +1,6 @@
 package com.minipaygateway;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -94,6 +95,88 @@ class AccountApiIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void getBalance_unknownAccount_returns404() throws Exception {
+		String adminToken = fetchToken("admin", "admin");
+		mockMvc.perform(get("/api/v1/accounts/{id}/balance", 9_999_999_999L)
+				.header("Authorization", "Bearer " + adminToken))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ACCOUNT_NOT_FOUND"));
+	}
+
+	@Test
+	void merchantCannotReadOtherOwnerBalance_returns403() throws Exception {
+		String adminToken = fetchToken("admin", "admin");
+		String merchantOtherToken = fetchToken("merchant-other", "merchant");
+
+		var body = new CreateAccountRequest("sole-proprietor-x", "USD", AccountType.MERCHANT, new BigDecimal("10.00"));
+		String createJson = objectMapper.writeValueAsString(body);
+		String created = mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", UUID.randomUUID().toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createJson))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		long id = objectMapper.readTree(created).get("id").asLong();
+
+		mockMvc.perform(get("/api/v1/accounts/{id}/balance", id)
+				.header("Authorization", "Bearer " + merchantOtherToken))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	void createAccount_sameIdempotencyKeyAndBody_replaysSameResponse() throws Exception {
+		String adminToken = fetchToken("admin", "admin");
+		UUID key = UUID.randomUUID();
+		var body = new CreateAccountRequest("idempo-a", "USD", AccountType.MERCHANT, BigDecimal.ZERO);
+		String json = objectMapper.writeValueAsString(body);
+
+		String first = mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+
+		String second = mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+
+		long id1 = objectMapper.readTree(first).get("id").asLong();
+		long id2 = objectMapper.readTree(second).get("id").asLong();
+		assertThat(id2).isEqualTo(id1);
+	}
+
+	@Test
+	void createAccount_sameIdempotencyKeyDifferentBody_returns409() throws Exception {
+		String adminToken = fetchToken("admin", "admin");
+		UUID key = UUID.randomUUID();
+		var body1 = new CreateAccountRequest("idempo-b", "USD", AccountType.MERCHANT, BigDecimal.ZERO);
+		var body2 = new CreateAccountRequest("idempo-c", "USD", AccountType.MERCHANT, BigDecimal.ZERO);
+
+		mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(body1)))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(body2)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSE"));
 	}
 
 	private String fetchToken(String user, String pass) throws Exception {

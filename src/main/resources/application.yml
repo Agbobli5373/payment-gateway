@@ -45,6 +45,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:change-me-in-production-use-256-bit-secret}
     expiry-seconds: ${JWT_EXPIRY_SECONDS:3600}
+  idempotency:
+    ttl: PT24H
   security:
     users:
       - username: admin
@@ -53,6 +55,12 @@ app:
           - ADMIN
       - username: merchant
         password: "{noop}merchant"
+        owner-ref: merchant-acme
+        roles:
+          - MERCHANT
+      - username: merchant-other
+        password: "{noop}merchant"
+        owner-ref: other-owner
         roles:
           - MERCHANT
       - username: auditor

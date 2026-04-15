@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Epic 3 will persist and replay idempotency keys. For now: require a valid UUID on POST /api/v1/accounts.
+ * Require a valid UUID on POST /api/v1/accounts; replay and conflict detection are handled in {@link com.minipaygateway.service.IdempotencyService}.
  */
 public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 

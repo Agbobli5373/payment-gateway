@@ -14,6 +14,12 @@ public class SecurityUsersProperties {
 		return users;
 	}
 
-	public record UserEntry(String username, String password, List<String> roles) {
+	/**
+	 * @param ownerRef optional; when set for a MERCHANT user, included in JWT and used to authorize balance reads.
+	 */
+	public record UserEntry(String username, String password, List<String> roles, String ownerRef) {
+		public UserEntry {
+			roles = roles == null ? List.of() : List.copyOf(roles);
+		}
 	}
 }

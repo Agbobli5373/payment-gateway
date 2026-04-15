@@ -60,7 +60,7 @@ public class SecurityConfig {
 				.map(u -> User.builder()
 						.username(u.username())
 						.password(u.password())
-						.roles(u.roles().toArray(String[]::new))
+						.roles(u.roles().isEmpty() ? new String[0] : u.roles().toArray(String[]::new))
 						.build())
 				.toList();
 		return new InMemoryUserDetailsManager(users);
