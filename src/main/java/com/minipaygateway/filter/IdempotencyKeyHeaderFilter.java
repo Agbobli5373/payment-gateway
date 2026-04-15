@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +37,11 @@ public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
 			@NonNull FilterChain filterChain) throws ServletException, IOException {
 		if ("POST".equalsIgnoreCase(request.getMethod()) && requiresIdempotencyKey(request.getRequestURI())) {
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+				filterChain.doFilter(request, response);
+				return;
+			}
 			String key = request.getHeader(HEADER);
 			if (key == null || key.isBlank()) {
 				writeMissingKey(response);

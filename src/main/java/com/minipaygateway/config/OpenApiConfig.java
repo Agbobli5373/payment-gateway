@@ -17,7 +17,8 @@ public class OpenApiConfig {
 				.info(new Info()
 						.title("Mini Payment Gateway API")
 						.description("REST API per PRD v1.0 — use **Authentication** to obtain a JWT, then Authorize with `Bearer <token>`. "
-								+ "Mutating POSTs under **/api/v1/accounts** and **/api/v1/payments** require header **X-Idempotency-Key** (UUID).")
+								+ "Mutating POSTs under **/api/v1/accounts** and **/api/v1/payments** require header **X-Idempotency-Key** (UUID) when authenticated. "
+								+ "Payment and reconcile mutations return **501** until Epics 5–6; RBAC (Epic 4) is enforced.")
 						.version("0.0.1"))
 				.components(new Components().addSecuritySchemes("bearer-jwt",
 						new SecurityScheme()
