@@ -1,0 +1,64 @@
+# Env vars (PRD §10.3): DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, JWT_EXPIRY_SECONDS,
+# RATE_LIMIT_RPM, RECONCILE_CRON. Use SPRING_PROFILES_ACTIVE=docker inside Compose.
+
+spring:
+  application:
+    name: payment-gateway
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/paygateway}
+    username: ${DB_USERNAME:pguser}
+    password: ${DB_PASSWORD:pgsecret}
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+# Used in Epic 4+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-production-use-256-bit-secret}
+    expiry-seconds: ${JWT_EXPIRY_SECONDS:3600}
+  rate-limit:
+    requests-per-minute: ${RATE_LIMIT_RPM:100}
+  reconcile:
+    cron: ${RECONCILE_CRON:0 5 0 * * *}
+
+# Shown by GET /actuator/info (build.* from spring-boot-maven-plugin build-info goal)
+info:
+  application:
+    name: ${spring.application.name}
+    description: Mini Payment Gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    db:
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+---
+# Docker Compose: DB host is service name `postgres`
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/paygateway}
