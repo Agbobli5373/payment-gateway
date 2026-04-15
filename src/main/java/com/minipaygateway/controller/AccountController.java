@@ -15,10 +15,17 @@ import com.minipaygateway.dto.response.AccountBalanceResponse;
 import com.minipaygateway.dto.response.CreateAccountResponse;
 import com.minipaygateway.service.AccountService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
+@Tag(name = "Accounts")
+@SecurityRequirement(name = "bearer-jwt")
 public class AccountController {
 
 	private final AccountService accountService;
@@ -27,12 +34,15 @@ public class AccountController {
 		this.accountService = accountService;
 	}
 
+	@Operation(summary = "Create account (ADMIN)")
+	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = "Client UUID (Epic 3 will persist/replay)")
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<CreateAccountResponse> create(@RequestBody @Valid CreateAccountRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(accountService.create(request));
 	}
 
+	@Operation(summary = "Get live balance (MERCHANT or ADMIN)")
 	@GetMapping("/{id}/balance")
 	@PreAuthorize("hasAnyRole('MERCHANT','ADMIN')")
 	public AccountBalanceResponse balance(@PathVariable long id) {

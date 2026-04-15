@@ -13,9 +13,12 @@ import com.minipaygateway.dto.request.TokenRequest;
 import com.minipaygateway.dto.response.TokenResponse;
 import com.minipaygateway.security.JwtTokenProvider;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
+@Tag(name = "Authentication")
 public class AuthController {
 
 	private final AuthenticationManager authenticationManager;
@@ -29,6 +32,7 @@ public class AuthController {
 		this.expirySeconds = expirySeconds;
 	}
 
+	@Operation(summary = "Issue JWT", description = "Returns a stateless JWT with role claims. Use dev users from application.yml (e.g. admin/admin).")
 	@PostMapping("/api/v1/auth/token")
 	public ResponseEntity<TokenResponse> token(@RequestBody @Valid TokenRequest request) {
 		var auth = authenticationManager.authenticate(

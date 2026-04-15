@@ -21,6 +21,15 @@ spring:
   flyway:
     enabled: true
 
+# OpenAPI 3 + Swagger UI (local/testing — restrict or disable in production if needed)
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 # JWT + in-memory users ({noop} = no encoding; use bcrypt in production)
 app:
   jwt:
