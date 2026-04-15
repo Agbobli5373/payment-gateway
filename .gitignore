@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local TLS material (generate per docker/nginx README.md)
+docker/nginx/certs/*.crt
+docker/nginx/certs/*.key

@@ -1,9 +1,19 @@
 # Env vars (PRD §10.3): DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, JWT_EXPIRY_SECONDS,
 # RATE_LIMIT_RPM, RECONCILE_CRON. Use SPRING_PROFILES_ACTIVE=docker inside Compose.
+#
+# Local IDE: working directory should be the payment-gateway module (compose.yaml).
+# Disable auto Postgres: spring.docker.compose.enabled=false
 
 spring:
   application:
     name: payment-gateway
+  docker:
+    compose:
+      enabled: true
+      file: compose.yaml
+      readiness:
+        timeout: PT120S
+      lifecycle-management: start-and-stop
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/paygateway}
     username: ${DB_USERNAME:pguser}
@@ -83,5 +93,8 @@ spring:
   config:
     activate:
       on-profile: docker
+  docker:
+    compose:
+      enabled: false
   datasource:
     url: ${DB_URL:jdbc:postgresql://postgres:5432/paygateway}
