@@ -21,11 +21,25 @@ spring:
   flyway:
     enabled: true
 
-# Used in Epic 4+
+# JWT + in-memory users ({noop} = no encoding; use bcrypt in production)
 app:
   jwt:
     secret: ${JWT_SECRET:change-me-in-production-use-256-bit-secret}
     expiry-seconds: ${JWT_EXPIRY_SECONDS:3600}
+  security:
+    users:
+      - username: admin
+        password: "{noop}admin"
+        roles:
+          - ADMIN
+      - username: merchant
+        password: "{noop}merchant"
+        roles:
+          - MERCHANT
+      - username: auditor
+        password: "{noop}auditor"
+        roles:
+          - AUDITOR
   rate-limit:
     requests-per-minute: ${RATE_LIMIT_RPM:100}
   reconcile:

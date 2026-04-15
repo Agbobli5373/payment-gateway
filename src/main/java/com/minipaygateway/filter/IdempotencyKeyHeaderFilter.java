@@ -1,0 +1,61 @@
+package com.minipaygateway.filter;
+
+import java.io.IOException;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.lang.NonNull;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * Epic 3 will persist and replay idempotency keys. For now: require a valid UUID on POST /api/v1/accounts.
+ */
+public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
+
+	public static final String HEADER = "X-Idempotency-Key";
+
+	private final ObjectMapper objectMapper;
+
+	public IdempotencyKeyHeaderFilter(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
+	@Override
+	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+			@NonNull FilterChain filterChain) throws ServletException, IOException {
+		if ("POST".equalsIgnoreCase(request.getMethod()) && "/api/v1/accounts".equals(request.getRequestURI())) {
+			String key = request.getHeader(HEADER);
+			if (key == null || key.isBlank()) {
+				writeMissingKey(response);
+				return;
+			}
+			try {
+				UUID.fromString(key.trim());
+			}
+			catch (IllegalArgumentException e) {
+				writeMissingKey(response);
+				return;
+			}
+		}
+		filterChain.doFilter(request, response);
+	}
+
+	private void writeMissingKey(HttpServletResponse response) throws IOException {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+				"Header " + HEADER + " is required and must be a UUID");
+		problem.setTitle("Bad Request");
+		problem.setProperty("code", "MISSING_IDEMPOTENCY_KEY");
+		response.setStatus(HttpStatus.BAD_REQUEST.value());
+		response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+		objectMapper.writeValue(response.getOutputStream(), problem);
+	}
+}
