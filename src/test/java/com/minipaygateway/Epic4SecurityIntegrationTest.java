@@ -90,30 +90,37 @@ class Epic4SecurityIntegrationTest {
 	@Test
 	void merchant_postPaymentProcess_returns403() throws Exception {
 		String token = fetchToken("merchant", "merchant");
-		mockMvc.perform(post("/api/v1/payments/1/process")
+		mockMvc.perform(post("/api/v1/payments/{ref}/process", "00000000-0000-0000-0000-000000000000")
 				.header("Authorization", "Bearer " + token)
-				.header("X-Idempotency-Key", UUID.randomUUID().toString()))
+				.header("X-Idempotency-Key", UUID.randomUUID().toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
 	}
 
 	@Test
-	void merchant_postPaymentInitiate_returns501() throws Exception {
+	void merchant_postPaymentInitiate_withInvalidBody_returns400() throws Exception {
 		String token = fetchToken("merchant", "merchant");
 		mockMvc.perform(post("/api/v1/payments/initiate")
 				.header("Authorization", "Bearer " + token)
-				.header("X-Idempotency-Key", UUID.randomUUID().toString()))
-				.andExpect(status().isNotImplemented())
-				.andExpect(jsonPath("$.code").value("NOT_IMPLEMENTED"));
+				.header("X-Idempotency-Key", UUID.randomUUID().toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 	}
 
 	@Test
-	void admin_postPaymentInitiate_returns501() throws Exception {
+	void admin_postPaymentInitiate_withInvalidBody_returns400() throws Exception {
 		String token = fetchToken("admin", "admin");
 		mockMvc.perform(post("/api/v1/payments/initiate")
 				.header("Authorization", "Bearer " + token)
-				.header("X-Idempotency-Key", UUID.randomUUID().toString()))
-				.andExpect(status().isNotImplemented());
+				.header("X-Idempotency-Key", UUID.randomUUID().toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 	}
 
 	@Test
@@ -121,7 +128,10 @@ class Epic4SecurityIntegrationTest {
 		String token = fetchToken("auditor", "auditor");
 		mockMvc.perform(post("/api/v1/payments/initiate")
 				.header("Authorization", "Bearer " + token)
-				.header("X-Idempotency-Key", UUID.randomUUID().toString()))
+				.header("X-Idempotency-Key", UUID.randomUUID().toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(
+						"{\"payerAccountId\":1,\"payeeAccountId\":2,\"amount\":1,\"currency\":\"USD\"}"))
 				.andExpect(status().isForbidden());
 	}
 
@@ -152,17 +162,18 @@ class Epic4SecurityIntegrationTest {
 	@Test
 	void auditor_getPayment_returns403() throws Exception {
 		String token = fetchToken("auditor", "auditor");
-		mockMvc.perform(get("/api/v1/payments/{id}", 1L)
+		mockMvc.perform(get("/api/v1/payments/{ref}", "00000000-0000-0000-0000-000000000000")
 				.header("Authorization", "Bearer " + token))
 				.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void merchant_getPayment_returns501() throws Exception {
+	void merchant_getPayment_unknownRef_returns404() throws Exception {
 		String token = fetchToken("merchant", "merchant");
-		mockMvc.perform(get("/api/v1/payments/{id}", 1L)
+		mockMvc.perform(get("/api/v1/payments/{ref}", "00000000-0000-0000-0000-000000000000")
 				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isNotImplemented());
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TRANSACTION_NOT_FOUND"));
 	}
 
 	@Test

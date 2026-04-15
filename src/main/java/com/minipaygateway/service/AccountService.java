@@ -3,7 +3,9 @@ package com.minipaygateway.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Optional;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +25,8 @@ import com.minipaygateway.security.JwtUserDetails;
 public class AccountService {
 
 	public static final String SYSTEM_SUSPENSE_OWNER = "SYSTEM_SUSPENSE";
+
+	public static final String SYSTEM_FLOAT_OWNER = "SYSTEM_FLOAT";
 
 	private final AccountRepository accountRepository;
 	private final LedgerService ledgerService;
@@ -80,8 +84,8 @@ public class AccountService {
 			throw new AccessDeniedException("Not allowed to read this account");
 		}
 		String boundOwnerRef = null;
-		if (auth.getDetails() instanceof JwtUserDetails d) {
-			boundOwnerRef = d.ownerRef();
+		if (auth.getDetails() instanceof JwtUserDetails(String ownerRef)) {
+			boundOwnerRef = ownerRef;
 		}
 		if (boundOwnerRef == null || boundOwnerRef.isBlank() || !boundOwnerRef.equals(account.getOwnerRef())) {
 			throw new AccessDeniedException("Not allowed to read this account");
@@ -97,5 +101,27 @@ public class AccountService {
 			a.setAccountType(AccountType.SUSPENSE);
 			return accountRepository.save(a);
 		});
+	}
+
+	/**
+	 * Per-currency platform FLOAT account for payment capture (US-5.2 / US-5.3). Created lazily.
+	 */
+	@Transactional
+	public Account getOrCreateSystemFloat(String currency) {
+		String ccy = currency.toUpperCase();
+		Optional<Account> existing = accountRepository.findByOwnerRefAndCurrency(SYSTEM_FLOAT_OWNER, ccy);
+		if (existing.isPresent()) {
+			return existing.get();
+		}
+		try {
+			Account a = new Account();
+			a.setOwnerRef(SYSTEM_FLOAT_OWNER);
+			a.setCurrency(ccy);
+			a.setAccountType(AccountType.FLOAT);
+			return accountRepository.save(a);
+		}
+		catch (DataIntegrityViolationException ex) {
+			return accountRepository.findByOwnerRefAndCurrency(SYSTEM_FLOAT_OWNER, ccy).orElseThrow(() -> ex);
+		}
 	}
 }

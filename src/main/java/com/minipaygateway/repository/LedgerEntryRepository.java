@@ -1,6 +1,7 @@
 package com.minipaygateway.repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,6 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
 			  and currency = :currency
 			""", nativeQuery = true)
 	BigDecimal computeNetBalance(@Param("accountId") long accountId, @Param("currency") String currency);
+
+	List<LedgerEntry> findByPaymentTransactionIdOrderByIdAsc(Long paymentTransactionId);
 }

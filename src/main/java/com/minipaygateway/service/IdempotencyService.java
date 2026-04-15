@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minipaygateway.domain.IdempotencyKey;
-import com.minipaygateway.dto.response.CreateAccountResponse;
 import com.minipaygateway.exception.IdempotencyKeyConflictException;
 import com.minipaygateway.repository.IdempotencyKeyRepository;
 
@@ -50,8 +49,7 @@ public class IdempotencyService {
 	}
 
 	@Transactional
-	public IdempotencyExecutionResult execute(UUID key, String requestHash,
-			Supplier<CreateAccountResponse> createAccount) {
+	public IdempotencyExecutionResult execute(UUID key, String requestHash, Supplier<IdempotentResult> operation) {
 		acquireTransactionAdvisoryLock(key);
 		Optional<IdempotencyKey> existing = idempotencyKeyRepository.findById(key);
 		if (existing.isPresent()) {
@@ -68,17 +66,17 @@ public class IdempotencyService {
 			}
 		}
 
-		CreateAccountResponse body = createAccount.get();
+		IdempotentResult result = operation.get();
 		try {
-			String json = objectMapper.writeValueAsString(body);
+			String json = objectMapper.writeValueAsString(result.body());
 			IdempotencyKey row = new IdempotencyKey();
 			row.setKey(key);
 			row.setRequestHash(requestHash);
-			row.setHttpStatus((short) 201);
+			row.setHttpStatus((short) result.httpStatus());
 			row.setResponseBody(json);
 			row.setExpiresAt(Instant.now().plus(ttl));
 			idempotencyKeyRepository.save(row);
-			return new IdempotencyExecutionResult(201, json);
+			return new IdempotencyExecutionResult(result.httpStatus(), json);
 		}
 		catch (JsonProcessingException e) {
 			throw new IllegalStateException(e);
@@ -94,6 +92,9 @@ public class IdempotencyService {
 				.setParameter("a", k1)
 				.setParameter("b", k2)
 				.getSingleResult();
+	}
+
+	public record IdempotentResult(int httpStatus, Object body) {
 	}
 
 	public record IdempotencyExecutionResult(int httpStatus, String responseBodyJson) {

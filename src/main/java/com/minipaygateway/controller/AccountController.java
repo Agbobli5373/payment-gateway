@@ -49,7 +49,8 @@ public class AccountController {
 	}
 
 	@Operation(summary = "Create account (ADMIN)")
-	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = "Client UUID; duplicate key + same body replays the stored response (201)")
+	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true,
+			description = "Fresh UUID per create; duplicate key + same body replays the stored response (201). Do not reuse the same key on other endpoints or paths.")
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<CreateAccountResponse> create(
@@ -61,7 +62,8 @@ public class AccountController {
 		if (!violations.isEmpty()) {
 			throw new ConstraintViolationException(violations);
 		}
-		var result = idempotencyService.execute(idempotencyKey, hash, () -> accountService.create(request));
+		var result = idempotencyService.execute(idempotencyKey, hash,
+				() -> new IdempotencyService.IdempotentResult(201, accountService.create(request)));
 		CreateAccountResponse body = objectMapper.readValue(result.responseBodyJson(), CreateAccountResponse.class);
 		return ResponseEntity.status(result.httpStatus()).body(body);
 	}

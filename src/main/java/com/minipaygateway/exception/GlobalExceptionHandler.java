@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
@@ -71,11 +73,36 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.badRequest().body(problem);
 	}
 
+	@ExceptionHandler(JsonProcessingException.class)
+	ResponseEntity<ProblemDetail> jsonProcessing(JsonProcessingException ex) {
+		String detail = ex.getOriginalMessage() != null ? ex.getOriginalMessage() : "Invalid JSON";
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+		problem.setTitle("Bad Request");
+		problem.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.badRequest().body(problem);
+	}
+
 	@ExceptionHandler(IdempotencyKeyConflictException.class)
 	ResponseEntity<ProblemDetail> idempotencyConflict(IdempotencyKeyConflictException ex) {
 		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 		problem.setTitle("Conflict");
 		problem.setProperty("code", "IDEMPOTENCY_CONFLICT");
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+	}
+
+	@ExceptionHandler(TransactionNotFoundException.class)
+	ResponseEntity<ProblemDetail> transactionNotFound(TransactionNotFoundException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+		problem.setTitle("Not Found");
+		problem.setProperty("code", "TRANSACTION_NOT_FOUND");
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+	}
+
+	@ExceptionHandler(InvalidStateTransitionException.class)
+	ResponseEntity<ProblemDetail> invalidStateTransition(InvalidStateTransitionException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+		problem.setTitle("Unprocessable Entity");
+		problem.setProperty("code", "INVALID_STATE_TRANSITION");
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
 	}
 }

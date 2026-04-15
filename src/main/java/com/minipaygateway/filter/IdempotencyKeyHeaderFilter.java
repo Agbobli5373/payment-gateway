@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Require a valid UUID {@link #HEADER} on mutating POSTs under /api/v1/accounts and /api/v1/payments.
- * Replay and conflict handling for accounts are in {@link com.minipaygateway.service.IdempotencyService}.
+ * Replay and conflict handling are in {@link com.minipaygateway.service.IdempotencyService}.
  */
 public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 
