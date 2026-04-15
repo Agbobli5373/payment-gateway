@@ -17,7 +17,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Require a valid UUID on POST /api/v1/accounts; replay and conflict detection are handled in {@link com.minipaygateway.service.IdempotencyService}.
+ * Require a valid UUID {@link #HEADER} on mutating POSTs under /api/v1/accounts and /api/v1/payments.
+ * Replay and conflict handling for accounts are in {@link com.minipaygateway.service.IdempotencyService}.
  */
 public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 
@@ -32,7 +33,7 @@ public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
 			@NonNull FilterChain filterChain) throws ServletException, IOException {
-		if ("POST".equalsIgnoreCase(request.getMethod()) && "/api/v1/accounts".equals(request.getRequestURI())) {
+		if ("POST".equalsIgnoreCase(request.getMethod()) && requiresIdempotencyKey(request.getRequestURI())) {
 			String key = request.getHeader(HEADER);
 			if (key == null || key.isBlank()) {
 				writeMissingKey(response);
@@ -47,6 +48,16 @@ public class IdempotencyKeyHeaderFilter extends OncePerRequestFilter {
 			}
 		}
 		filterChain.doFilter(request, response);
+	}
+
+	static boolean requiresIdempotencyKey(String requestUri) {
+		if (requestUri == null) {
+			return false;
+		}
+		if ("/api/v1/accounts".equals(requestUri)) {
+			return true;
+		}
+		return requestUri.equals("/api/v1/payments") || requestUri.startsWith("/api/v1/payments/");
 	}
 
 	private void writeMissingKey(HttpServletResponse response) throws IOException {

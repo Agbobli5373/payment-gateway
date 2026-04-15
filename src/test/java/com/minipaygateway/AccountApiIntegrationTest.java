@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minipaygateway.dto.request.CreateAccountRequest;
+import com.minipaygateway.domain.IdempotencyKey;
 import com.minipaygateway.domain.enums.AccountType;
+import com.minipaygateway.dto.request.CreateAccountRequest;
+import com.minipaygateway.repository.IdempotencyKeyRepository;
+import com.minipaygateway.scheduler.IdempotencyCleanupJob;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,6 +45,12 @@ class AccountApiIntegrationTest {
 
 	@Autowired
 	ObjectMapper objectMapper;
+
+	@Autowired
+	IdempotencyKeyRepository idempotencyKeyRepository;
+
+	@Autowired
+	IdempotencyCleanupJob idempotencyCleanupJob;
 
 	@Test
 	void adminCreatesAccount_merchantCanReadBalance_merchantCannotCreate() throws Exception {
@@ -176,7 +186,31 @@ class AccountApiIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(body2)))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSE"));
+				.andExpect(jsonPath("$.code").value("IDEMPOTENCY_CONFLICT"));
+	}
+
+	@Test
+	void createAccount_afterExpiredKeyPurged_sameIdempotencyUuidCanCreateAgain() throws Exception {
+		UUID key = UUID.randomUUID();
+		IdempotencyKey row = new IdempotencyKey();
+		row.setKey(key);
+		row.setRequestHash("stale");
+		row.setHttpStatus((short) 201);
+		row.setResponseBody("{\"id\":0}");
+		row.setExpiresAt(Instant.now().minusSeconds(7_200));
+		idempotencyKeyRepository.save(row);
+
+		idempotencyCleanupJob.purgeExpiredIdempotencyKeys();
+
+		String adminToken = fetchToken("admin", "admin");
+		var body = new CreateAccountRequest("post-purge-owner", "USD", AccountType.MERCHANT, BigDecimal.ZERO);
+		mockMvc.perform(post("/api/v1/accounts")
+				.header("Authorization", "Bearer " + adminToken)
+				.header("X-Idempotency-Key", key.toString())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(body)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.ownerRef").value("post-purge-owner"));
 	}
 
 	private String fetchToken(String user, String pass) throws Exception {

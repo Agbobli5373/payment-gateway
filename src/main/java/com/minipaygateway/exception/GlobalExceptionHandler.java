@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
 	ResponseEntity<ProblemDetail> idempotencyConflict(IdempotencyKeyConflictException ex) {
 		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 		problem.setTitle("Conflict");
-		problem.setProperty("code", "IDEMPOTENCY_KEY_REUSE");
+		problem.setProperty("code", "IDEMPOTENCY_CONFLICT");
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
 	}
 }

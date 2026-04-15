@@ -17,7 +17,7 @@ public class OpenApiConfig {
 				.info(new Info()
 						.title("Mini Payment Gateway API")
 						.description("REST API per PRD v1.0 — use **Authentication** to obtain a JWT, then Authorize with `Bearer <token>`. "
-								+ "POST /accounts requires header **X-Idempotency-Key** (UUID).")
+								+ "Mutating POSTs under **/api/v1/accounts** and **/api/v1/payments** require header **X-Idempotency-Key** (UUID).")
 						.version("0.0.1"))
 				.components(new Components().addSecuritySchemes("bearer-jwt",
 						new SecurityScheme()

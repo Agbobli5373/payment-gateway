@@ -47,6 +47,7 @@ app:
     expiry-seconds: ${JWT_EXPIRY_SECONDS:3600}
   idempotency:
     ttl: PT24H
+    cleanup-cron: ${IDEMPOTENCY_CLEANUP_CRON:0 0 2 * * *}
   security:
     users:
       - username: admin
