@@ -18,6 +18,8 @@ import com.minipaygateway.dto.response.ReconciliationReportSummaryResponse;
 import com.minipaygateway.service.ReconcileService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -37,6 +39,12 @@ public class ReconcileController {
 	}
 
 	@Operation(summary = "Run reconciliation (ADMIN or AUDITOR)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Reconciliation report generated"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError")
+	})
 	@PostMapping
 	@PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
 	public ReconciliationReportDetailResponse runReconciliation(@RequestBody @Valid ReconcileRequest request) {
@@ -44,6 +52,11 @@ public class ReconcileController {
 	}
 
 	@Operation(summary = "List reconciliation reports (ADMIN or AUDITOR)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Reports listed"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError")
+	})
 	@GetMapping("/reports")
 	@PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
 	public Page<ReconciliationReportSummaryResponse> listReports(@RequestParam(defaultValue = "0") int page,
@@ -54,6 +67,12 @@ public class ReconcileController {
 	}
 
 	@Operation(summary = "Get reconciliation report detail (ADMIN or AUDITOR)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Report detail returned"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError")
+	})
 	@GetMapping("/reports/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
 	public ReconciliationReportDetailResponse getReport(@PathVariable long id) {

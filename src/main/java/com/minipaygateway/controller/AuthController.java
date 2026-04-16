@@ -15,6 +15,8 @@ import com.minipaygateway.dto.response.TokenResponse;
 import com.minipaygateway.security.JwtTokenProvider;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -37,6 +39,11 @@ public class AuthController {
 	}
 
 	@Operation(summary = "Issue JWT", description = "Returns a stateless JWT with role claims. Use dev users from application.yml (e.g. admin/admin).")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "JWT issued"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", description = "Invalid credentials (code=UNAUTHORIZED)")
+	})
 	@PostMapping("/api/v1/auth/token")
 	public ResponseEntity<TokenResponse> token(@RequestBody @Valid TokenRequest request) {
 		var auth = authenticationManager.authenticate(

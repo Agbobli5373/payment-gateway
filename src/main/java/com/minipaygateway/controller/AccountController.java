@@ -24,6 +24,8 @@ import com.minipaygateway.service.IdempotencyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolationException;
@@ -49,6 +51,15 @@ public class AccountController {
 	}
 
 	@Operation(summary = "Create account (ADMIN)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Account created"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "429", ref = "#/components/responses/RateLimitError"),
+			@ApiResponse(responseCode = "503", ref = "#/components/responses/ServiceUnavailableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true,
 			description = "Fresh UUID per create; duplicate key + same body replays the stored response (201). Do not reuse the same key on other endpoints or paths.")
 	@PostMapping
@@ -69,6 +80,14 @@ public class AccountController {
 	}
 
 	@Operation(summary = "Get live balance (MERCHANT or ADMIN)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Balance returned"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "429", ref = "#/components/responses/RateLimitError"),
+			@ApiResponse(responseCode = "503", ref = "#/components/responses/ServiceUnavailableError")
+	})
 	@GetMapping("/{id}/balance")
 	@PreAuthorize("hasAnyRole('MERCHANT','ADMIN')")
 	public AccountBalanceResponse balance(@PathVariable long id) {

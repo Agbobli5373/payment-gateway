@@ -30,6 +30,8 @@ import com.minipaygateway.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolationException;
@@ -59,6 +61,16 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "Initiate payment (MERCHANT or ADMIN)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Payment initiated"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "422", ref = "#/components/responses/UnprocessableError"),
+			@ApiResponse(responseCode = "429", ref = "#/components/responses/RateLimitError"),
+			@ApiResponse(responseCode = "503", ref = "#/components/responses/ServiceUnavailableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = IDEMPOTENCY_KEY_DESC)
 	@PostMapping("/initiate")
 	@PreAuthorize("hasAnyRole('MERCHANT','ADMIN')")
@@ -79,6 +91,13 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "List payments (MERCHANT or ADMIN)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payments listed"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "429", ref = "#/components/responses/RateLimitError"),
+			@ApiResponse(responseCode = "503", ref = "#/components/responses/ServiceUnavailableError")
+	})
 	@GetMapping
 	@PreAuthorize("hasAnyRole('MERCHANT','ADMIN')")
 	public Page<PaymentTransactionResponse> list(@RequestParam(required = false) PaymentStatus status,
@@ -92,6 +111,14 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "Get payment by reference (MERCHANT or ADMIN)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payment found"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "429", ref = "#/components/responses/RateLimitError"),
+			@ApiResponse(responseCode = "503", ref = "#/components/responses/ServiceUnavailableError")
+	})
 	@GetMapping("/{ref}")
 	@PreAuthorize("hasAnyRole('MERCHANT','ADMIN')")
 	public PaymentTransactionResponse getByRef(@PathVariable("ref") String ref) {
@@ -99,6 +126,15 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "Process payment (ADMIN only)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payment processed"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "422", ref = "#/components/responses/UnprocessableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = IDEMPOTENCY_KEY_DESC)
 	@PostMapping("/{ref}/process")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -110,6 +146,15 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "Settle payment (ADMIN only)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payment settled"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "422", ref = "#/components/responses/UnprocessableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = IDEMPOTENCY_KEY_DESC)
 	@PostMapping("/{ref}/settle")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -122,6 +167,15 @@ public class PaymentController {
 
 	@Operation(summary = "Reverse payment (ADMIN only)",
 			description = "May return 422 INSUFFICIENT_BALANCE if the payee (e.g. MERCHANT) cannot fund the compensating debit.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payment reversed"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "422", ref = "#/components/responses/UnprocessableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = IDEMPOTENCY_KEY_DESC)
 	@PostMapping("/{ref}/reverse")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -133,6 +187,15 @@ public class PaymentController {
 	}
 
 	@Operation(summary = "Fail pending payment (ADMIN only)")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Payment failed"),
+			@ApiResponse(responseCode = "400", ref = "#/components/responses/ValidationError"),
+			@ApiResponse(responseCode = "401", ref = "#/components/responses/UnauthorizedError"),
+			@ApiResponse(responseCode = "403", ref = "#/components/responses/ForbiddenError"),
+			@ApiResponse(responseCode = "404", ref = "#/components/responses/NotFoundError"),
+			@ApiResponse(responseCode = "409", ref = "#/components/responses/ConflictError"),
+			@ApiResponse(responseCode = "422", ref = "#/components/responses/UnprocessableError")
+	})
 	@Parameter(name = "X-Idempotency-Key", in = ParameterIn.HEADER, required = true, description = IDEMPOTENCY_KEY_DESC)
 	@PostMapping("/{ref}/fail")
 	@PreAuthorize("hasRole('ADMIN')")
