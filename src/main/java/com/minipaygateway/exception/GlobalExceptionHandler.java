@@ -105,4 +105,21 @@ public class GlobalExceptionHandler {
 		problem.setProperty("code", "INVALID_STATE_TRANSITION");
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
 	}
+
+	@ExceptionHandler(ReconciliationReportNotFoundException.class)
+	ResponseEntity<ProblemDetail> reconciliationReportNotFound(ReconciliationReportNotFoundException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+		problem.setTitle("Not Found");
+		problem.setProperty("code", "RECONCILIATION_REPORT_NOT_FOUND");
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+	}
+
+	@ExceptionHandler(ReconciliationReportCorruptException.class)
+	ResponseEntity<ProblemDetail> reconciliationReportCorrupt(ReconciliationReportCorruptException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+		problem.setTitle("Internal Server Error");
+		problem.setProperty("code", "RECONCILIATION_REPORT_CORRUPT");
+		problem.setProperty("reportId", ex.getReportId());
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
+	}
 }

@@ -139,24 +139,35 @@ class Epic4SecurityIntegrationTest {
 	void merchant_postReconcile_returns403() throws Exception {
 		String token = fetchToken("merchant", "merchant");
 		mockMvc.perform(post("/api/v1/reconcile")
-				.header("Authorization", "Bearer " + token))
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(
+						"{\"from\":\"2020-01-01T00:00:00Z\",\"to\":\"2020-01-02T00:00:00Z\",\"currency\":\"USD\"}"))
 				.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void auditor_postReconcile_returns501() throws Exception {
+	void auditor_postReconcile_returns200() throws Exception {
 		String token = fetchToken("auditor", "auditor");
 		mockMvc.perform(post("/api/v1/reconcile")
-				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isNotImplemented());
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(
+						"{\"from\":\"2020-01-01T00:00:00Z\",\"to\":\"2020-01-02T00:00:00Z\",\"currency\":\"USD\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.discrepancyCount").value(0));
 	}
 
 	@Test
-	void admin_postReconcile_returns501() throws Exception {
+	void admin_postReconcile_returns200() throws Exception {
 		String token = fetchToken("admin", "admin");
 		mockMvc.perform(post("/api/v1/reconcile")
-				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isNotImplemented());
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(
+						"{\"from\":\"2020-01-01T00:00:00Z\",\"to\":\"2020-01-02T00:00:00Z\",\"currency\":\"USD\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.discrepancyCount").value(0));
 	}
 
 	@Test
@@ -177,11 +188,12 @@ class Epic4SecurityIntegrationTest {
 	}
 
 	@Test
-	void auditor_getReconcileReport_returns501() throws Exception {
+	void auditor_getReconcileReport_unknownId_returns404() throws Exception {
 		String token = fetchToken("auditor", "auditor");
-		mockMvc.perform(get("/api/v1/reconcile/reports/{id}", 1L)
+		mockMvc.perform(get("/api/v1/reconcile/reports/{id}", 9_999_999_999L)
 				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isNotImplemented());
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("RECONCILIATION_REPORT_NOT_FOUND"));
 	}
 
 	private String fetchToken(String user, String pass) throws Exception {

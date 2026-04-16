@@ -72,6 +72,7 @@ app:
     requests-per-minute: ${RATE_LIMIT_RPM:100}
   reconcile:
     cron: ${RECONCILE_CRON:0 5 0 * * *}
+    currencies: ${RECONCILE_CURRENCIES:USD,EUR,GHS}
 
 # Shown by GET /actuator/info (build.* from spring-boot-maven-plugin build-info goal)
 info:
