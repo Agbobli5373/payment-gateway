@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "description": "Reusable manual API testing payloads for the Mini Payment Gateway.",
+    "notes": [
+      "Replace placeholder values before sending requests.",
+      "Use a fresh UUID for every new mutating request unless you are testing idempotency replay.",
+      "Numeric placeholders are stored as strings here to keep this file valid JSON."
+    ]
+  },
+  "baseUrls": {
+    "directApp": "http://localhost:8080",
+    "nginxTls": "https://localhost"
+  },
+  "placeholders": {
+    "adminToken": "{{adminToken}}",
+    "merchantToken": "{{merchantToken}}",
+    "auditorToken": "{{auditorToken}}",
+    "payerAccountId": "{{payerAccountId}}",
+    "payeeAccountId": "{{payeeAccountId}}",
+    "paymentRef": "{{paymentRef}}",
+    "reportId": "{{reportId}}",
+    "idempotencyKey": "{{uuid}}"
+  },
+  "headers": {
+    "jsonOnly": {
+      "Content-Type": "application/json"
+    },
+    "authJson": {
+      "Authorization": "Bearer {{token}}",
+      "Content-Type": "application/json"
+    },
+    "authJsonIdempotent": {
+      "Authorization": "Bearer {{token}}",
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": "{{uuid}}"
+    }
+  },
+  "auth": {
+    "admin": {
+      "username": "admin",
+      "password": "admin"
+    },
+    "merchant": {
+      "username": "merchant",
+      "password": "merchant"
+    },
+    "merchantOther": {
+      "username": "merchant-other",
+      "password": "merchant"
+    },
+    "auditor": {
+      "username": "auditor",
+      "password": "auditor"
+    },
+    "wrongAdminPassword": {
+      "username": "admin",
+      "password": "wrong"
+    }
+  },
+  "accounts": {
+    "payerMerchantAcmeUsd": {
+      "ownerRef": "merchant-acme",
+      "currency": "USD",
+      "accountType": "MERCHANT",
+      "initialBalance": 200.00
+    },
+    "payeeOtherOwnerUsd": {
+      "ownerRef": "other-owner",
+      "currency": "USD",
+      "accountType": "MERCHANT",
+      "initialBalance": 0.00
+    },
+    "insufficientFundsPayerUsd": {
+      "ownerRef": "merchant-acme",
+      "currency": "USD",
+      "accountType": "MERCHANT",
+      "initialBalance": 5.00
+    }
+  },
+  "payments": {
+    "initiateHappyPathUsd25": {
+      "payerAccountId": "{{payerAccountId}}",
+      "payeeAccountId": "{{payeeAccountId}}",
+      "amount": 25.0000,
+      "currency": "USD"
+    },
+    "initiateInsufficientBalanceUsd250": {
+      "payerAccountId": "{{payerAccountId}}",
+      "payeeAccountId": "{{payeeAccountId}}",
+      "amount": 250.00,
+      "currency": "USD"
+    },
+    "initiateWrongCurrencyExample": {
+      "payerAccountId": "{{payerAccountId}}",
+      "payeeAccountId": "{{payeeAccountId}}",
+      "amount": 25.0000,
+      "currency": "EUR"
+    },
+    "process": {},
+    "settle": {},
+    "reverse": {},
+    "fail": {}
+  },
+  "reconciliation": {
+    "runUsdWindowExample": {
+      "from": "2026-04-16T10:00:00Z",
+      "to": "2026-04-16T12:00:00Z",
+      "currency": "USD"
+    },
+    "runWideUsdWindowExample": {
+      "from": "2026-04-16T00:00:00Z",
+      "to": "2026-04-16T23:59:59Z",
+      "currency": "USD"
+    }
+  },
+  "negativeCases": {
+    "missingJwt": {
+      "description": "Call a protected endpoint without Authorization header.",
+      "expectedStatus": 401,
+      "expectedCode": "UNAUTHORIZED"
+    },
+    "wrongRoleProcessAsMerchant": {
+      "description": "Call POST /api/v1/payments/{{paymentRef}}/process with merchant token.",
+      "expectedStatus": 403,
+      "expectedCode": "FORBIDDEN"
+    },
+    "missingIdempotencyKey": {
+      "description": "Omit X-Idempotency-Key on authenticated POST /api/v1/accounts or /api/v1/payments/**.",
+      "expectedStatus": 400,
+      "expectedCode": "MISSING_IDEMPOTENCY_KEY"
+    },
+    "invalidIdempotencyKey": {
+      "description": "Send X-Idempotency-Key: not-a-uuid.",
+      "expectedStatus": 400,
+      "expectedCode": "MISSING_IDEMPOTENCY_KEY"
+    },
+    "idempotencyConflict": {
+      "description": "Reuse the same UUID with a different request body.",
+      "expectedStatus": 409,
+      "expectedCode": "IDEMPOTENCY_CONFLICT"
+    },
+    "insufficientBalance": {
+      "description": "Initiate a payment larger than payer balance or reverse when funds are unavailable.",
+      "expectedStatus": 422,
+      "expectedCode": "INSUFFICIENT_BALANCE"
+    },
+    "invalidStateTransition": {
+      "description": "Try to settle a payment directly from PENDING without processing first.",
+      "expectedStatus": 422,
+      "expectedCode": "INVALID_STATE_TRANSITION"
+    },
+    "unknownAccount": {
+      "description": "GET /api/v1/accounts/999999999/balance",
+      "expectedStatus": 404,
+      "expectedCode": "ACCOUNT_NOT_FOUND"
+    },
+    "unknownPayment": {
+      "description": "GET /api/v1/payments/not-a-real-reference",
+      "expectedStatus": 404,
+      "expectedCode": "TRANSACTION_NOT_FOUND"
+    },
+    "unknownReport": {
+      "description": "GET /api/v1/reconcile/reports/999999999",
+      "expectedStatus": 404,
+      "expectedCode": "RECONCILIATION_REPORT_NOT_FOUND"
+    },
+    "rateLimitExceeded": {
+      "description": "Send many requests quickly to /api/v1/payments*.",
+      "expectedStatus": 429,
+      "expectedCode": "RATE_LIMIT_EXCEEDED"
+    },
+    "databaseUnavailable": {
+      "description": "Stop PostgreSQL and call a database-backed endpoint.",
+      "expectedStatus": 503,
+      "expectedCode": "SERVICE_UNAVAILABLE"
+    }
+  }
+}
