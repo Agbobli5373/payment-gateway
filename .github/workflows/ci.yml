@@ -68,7 +68,7 @@ jobs:
         run: rm -f .dependency-check-data/odc.update.lock || true
 
       - name: OWASP Dependency-Check (fail on CVSS >= 7)
-        run: mvn -B -DskipTests dependency-check:check
+        run: mvn -B -DskipTests -Pdepcheck-nvd-refresh dependency-check:check
 
       - name: Upload dependency-check report
         if: always()
