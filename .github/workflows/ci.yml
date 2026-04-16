@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+defaults:
+  run:
+    working-directory: payment-gateway
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,7 +27,7 @@ jobs:
           cache: maven
 
       - name: Maven package (skip tests)
-        run: mvn -B -f payment-gateway/pom.xml clean package -DskipTests
+        run: mvn -B clean package -DskipTests
 
   test:
     runs-on: ubuntu-latest
@@ -40,7 +44,7 @@ jobs:
           cache: maven
 
       - name: Maven verify (Testcontainers)
-        run: mvn -B -f payment-gateway/pom.xml verify
+        run: mvn -B verify
 
   dependency-check:
     runs-on: ubuntu-latest
@@ -65,17 +69,17 @@ jobs:
             ${{ runner.os }}-depcheck-
 
       - name: Clear stale dependency-check lock
-        run: rm -f payment-gateway/.dependency-check-data/odc.update.lock || true
+        run: rm -f .dependency-check-data/odc.update.lock || true
 
       - name: OWASP Dependency-Check (fail on CVSS >= 7)
-        run: mvn -B -f payment-gateway/pom.xml -DskipTests dependency-check:check
+        run: mvn -B -DskipTests dependency-check:check
 
       - name: Upload dependency-check report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
-          path: target/dependency-check-report/**
+          path: payment-gateway/target/dependency-check-report/**
           if-no-files-found: warn
 
   docker-publish-main:
