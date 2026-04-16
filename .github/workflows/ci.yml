@@ -20,4 +20,4 @@ jobs:
           cache: maven
 
       - name: Maven verify
-        run: mvn -B -f payment-gateway/pom.xml verify
+        run: mvn -B -f pom.xml verify
