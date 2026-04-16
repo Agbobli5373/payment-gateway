@@ -8,10 +8,6 @@ on:
   pull_request:
     branches: [ main, master ]
 
-defaults:
-  run:
-    working-directory: payment-gateway
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -63,8 +59,8 @@ jobs:
       - name: Cache dependency-check data
         uses: actions/cache@v4
         with:
-          path: payment-gateway/.dependency-check-data
-          key: ${{ runner.os }}-depcheck-${{ hashFiles('payment-gateway/pom.xml') }}
+          path: .dependency-check-data
+          key: ${{ runner.os }}-depcheck-${{ hashFiles('pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-depcheck-
 
@@ -79,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
-          path: payment-gateway/target/dependency-check-report/**
+          path: target/dependency-check-report/**
           if-no-files-found: warn
 
   docker-publish-main:
