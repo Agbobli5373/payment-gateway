@@ -15,6 +15,10 @@
 	<description>Mini Payment Gateway</description>
 	<properties>
 		<java.version>21</java.version>
+		<!-- Default Dependency-Check cache directory (used by CI caching) -->
+		<dependencyCheck.dataDirectory>${project.basedir}/.dependency-check-data</dependencyCheck.dataDirectory>
+		<!-- Auto-updating NVD can be slow without an API key; CI relies on caching -->
+		<dependencyCheck.autoUpdate>true</dependencyCheck.autoUpdate>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -152,6 +156,22 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>12.2.0</version>
+				<configuration>
+					<!-- Fail CI when CVSS (v2/v3 where available) >= threshold -->
+					<failBuildOnCVSS>7</failBuildOnCVSS>
+					<formats>
+						<format>HTML</format>
+						<format>XML</format>
+					</formats>
+					<outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+					<dataDirectory>${dependencyCheck.dataDirectory}</dataDirectory>
+					<autoUpdate>${dependencyCheck.autoUpdate}</autoUpdate>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<executions>
@@ -164,5 +184,16 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>depcheck-fast</id>
+			<properties>
+				<!-- Separate cache to avoid local lock contention while a full update is running -->
+				<dependencyCheck.dataDirectory>${project.build.directory}/dependency-check-data-fast</dependencyCheck.dataDirectory>
+				<dependencyCheck.autoUpdate>false</dependencyCheck.autoUpdate>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

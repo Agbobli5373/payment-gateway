@@ -1,5 +1,7 @@
 # Mini Payment Gateway
 
+[![CI](https://github.com/Agbobli5373/payment-gateway/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Agbobli5373/payment-gateway/actions/workflows/ci.yml)
+
 Spring Boot payment gateway with JWT/RBAC, idempotency, reconciliation, security controls, and observability.
 
 ## Run locally (Docker Compose)
@@ -27,6 +29,13 @@ Key variables (with defaults in `application.yml`):
 Artifacts:
 - Collection: `postman/Mini Payment Gateway.postman_collection.json`
 - Environment: `postman/Local Docker.postman_environment.json`
+
+## Docker image tags (GHCR)
+
+CI publishes to `ghcr.io/Agbobli5373/payment-gateway/`:
+- `:<commit-sha>` on `main` and on all tagged releases
+- `:latest` on `main`
+- `:<vX.Y.Z>` (plus `:<commit-sha>`) on tag pushes matching `v*` (e.g. `v1.2.3`)
 
 ### Import and run
 
