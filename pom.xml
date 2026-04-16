@@ -19,8 +19,8 @@
 		<tomcat.version>10.1.54</tomcat.version>
 		<!-- Default Dependency-Check cache directory (used by CI caching) -->
 		<dependencyCheck.dataDirectory>${project.basedir}/.dependency-check-data</dependencyCheck.dataDirectory>
-		<!-- Auto-updating NVD can be slow without an API key; CI relies on caching -->
-		<dependencyCheck.autoUpdate>true</dependencyCheck.autoUpdate>
+		<!-- Skip online NVD refresh by default (avoids long runs + API key warning). CI uses cached data. -->
+		<dependencyCheck.autoUpdate>false</dependencyCheck.autoUpdate>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -188,6 +188,13 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>depcheck-nvd-refresh</id>
+			<properties>
+				<!-- Refresh CVE data from NVD (faster with NVD_API_KEY + optional nvdApiKey in plugin config) -->
+				<dependencyCheck.autoUpdate>true</dependencyCheck.autoUpdate>
+			</properties>
+		</profile>
 		<profile>
 			<id>depcheck-fast</id>
 			<properties>
