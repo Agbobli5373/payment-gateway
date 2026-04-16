@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -53,6 +54,9 @@ class Epic5PaymentIntegrationTest {
 	@Autowired
 	PaymentTransactionRepository paymentTransactionRepository;
 
+	@Autowired
+	JdbcTemplate jdbcTemplate;
+
 	@Test
 	void initiate_process_settle_reverse_happyPath_ledgerAndBalances() throws Exception {
 		String admin = fetchToken("admin", "admin");
@@ -74,6 +78,10 @@ class Epic5PaymentIntegrationTest {
 		postMutation(admin, "/api/v1/payments/{ref}/reverse", ref, "{}");
 		assertThat(ledgerEntryRepository.findByPaymentTransactionIdOrderByIdAsc(
 				requirePaymentId(ref))).hasSize(3);
+		Long auditCount = jdbcTemplate.queryForObject(
+				"select count(*) from audit_log where entity_id = ? and entity_type = 'PAYMENT'",
+				Long.class, ref);
+		assertThat(auditCount).isEqualTo(4L);
 
 		mockMvc.perform(get("/api/v1/payments/{ref}", ref).header("Authorization", "Bearer " + merchant))
 				.andExpect(status().isOk())

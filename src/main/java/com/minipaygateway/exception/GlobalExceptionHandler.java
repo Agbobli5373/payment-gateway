@@ -3,8 +3,10 @@ package com.minipaygateway.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -121,5 +123,16 @@ public class GlobalExceptionHandler {
 		problem.setProperty("code", "RECONCILIATION_REPORT_CORRUPT");
 		problem.setProperty("reportId", ex.getReportId());
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
+	}
+
+	@ExceptionHandler({ CannotCreateTransactionException.class, CannotGetJdbcConnectionException.class })
+	ResponseEntity<ProblemDetail> serviceUnavailable(RuntimeException ex) {
+		var problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+				"Database temporarily unavailable");
+		problem.setTitle("Service Unavailable");
+		problem.setProperty("code", "SERVICE_UNAVAILABLE");
+		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.header("Retry-After", "5")
+				.body(problem);
 	}
 }

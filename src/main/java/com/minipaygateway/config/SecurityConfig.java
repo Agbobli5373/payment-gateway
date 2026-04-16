@@ -20,19 +20,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.minipaygateway.filter.CorrelationIdFilter;
 import com.minipaygateway.filter.IdempotencyKeyHeaderFilter;
 import com.minipaygateway.filter.JwtAuthFilter;
+import com.minipaygateway.filter.RateLimitFilter;
 import com.minipaygateway.security.JsonAccessDeniedHandler;
 import com.minipaygateway.security.JsonAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(SecurityUsersProperties.class)
+@EnableConfigurationProperties({ SecurityUsersProperties.class, RateLimitProperties.class })
 public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
+			RateLimitFilter rateLimitFilter,
 			IdempotencyKeyHeaderFilter idempotencyKeyHeaderFilter,
+			CorrelationIdFilter correlationIdFilter,
 			JsonAuthenticationEntryPoint authenticationEntryPoint,
 			JsonAccessDeniedHandler accessDeniedHandler) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
@@ -45,7 +49,9 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
 						.anyRequest().authenticated())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-				.addFilterAfter(idempotencyKeyHeaderFilter, JwtAuthFilter.class);
+				.addFilterAfter(rateLimitFilter, JwtAuthFilter.class)
+				.addFilterAfter(idempotencyKeyHeaderFilter, RateLimitFilter.class)
+				.addFilterAfter(correlationIdFilter, IdempotencyKeyHeaderFilter.class);
 		return http.build();
 	}
 

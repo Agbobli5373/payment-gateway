@@ -40,15 +40,17 @@ public class PaymentService {
 	private final LedgerEntryRepository ledgerEntryRepository;
 	private final LedgerService ledgerService;
 	private final AccountService accountService;
+	private final AuditLogService auditLogService;
 
 	public PaymentService(PaymentTransactionRepository paymentTransactionRepository,
 			AccountRepository accountRepository, LedgerEntryRepository ledgerEntryRepository,
-			LedgerService ledgerService, AccountService accountService) {
+			LedgerService ledgerService, AccountService accountService, AuditLogService auditLogService) {
 		this.paymentTransactionRepository = paymentTransactionRepository;
 		this.accountRepository = accountRepository;
 		this.ledgerEntryRepository = ledgerEntryRepository;
 		this.ledgerService = ledgerService;
 		this.accountService = accountService;
+		this.auditLogService = auditLogService;
 	}
 
 	@Transactional
@@ -92,6 +94,7 @@ public class PaymentService {
 		p.setCurrency(ccy);
 		p.setStatus(PaymentStatus.PENDING);
 		p = paymentTransactionRepository.save(p);
+		auditLogService.recordPaymentTransition(p.getReference(), null, PaymentStatus.PENDING);
 		return toResponse(p, List.of());
 	}
 
@@ -107,6 +110,7 @@ public class PaymentService {
 
 		p.setStatus(PaymentStatus.PROCESSING);
 		p = paymentTransactionRepository.save(p);
+		auditLogService.recordPaymentTransition(p.getReference(), PaymentStatus.PENDING, PaymentStatus.PROCESSING);
 		return toResponse(p, ledgerIds(p.getId()));
 	}
 
@@ -123,6 +127,7 @@ public class PaymentService {
 		p.setStatus(PaymentStatus.SETTLED);
 		p.setSettledAt(Instant.now());
 		p = paymentTransactionRepository.save(p);
+		auditLogService.recordPaymentTransition(p.getReference(), PaymentStatus.PROCESSING, PaymentStatus.SETTLED);
 		return toResponse(p, ledgerIds(p.getId()));
 	}
 
@@ -143,6 +148,7 @@ public class PaymentService {
 		p.setStatus(PaymentStatus.REVERSED);
 		p.setReversedAt(Instant.now());
 		p = paymentTransactionRepository.save(p);
+		auditLogService.recordPaymentTransition(p.getReference(), PaymentStatus.SETTLED, PaymentStatus.REVERSED);
 		return toResponse(p, ledgerIds(p.getId()));
 	}
 
@@ -155,6 +161,7 @@ public class PaymentService {
 		p.setStatus(PaymentStatus.FAILED);
 		p.setFailedAt(Instant.now());
 		p = paymentTransactionRepository.save(p);
+		auditLogService.recordPaymentTransition(p.getReference(), PaymentStatus.PENDING, PaymentStatus.FAILED);
 		return toResponse(p, ledgerIds(p.getId()));
 	}
 

@@ -1,0 +1,3 @@
+ALTER TABLE audit_log
+    ADD COLUMN entity_type VARCHAR(32) NOT NULL DEFAULT 'PAYMENT',
+    ADD COLUMN ip_address VARCHAR(45);
